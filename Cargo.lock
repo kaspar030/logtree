@@ -5,3 +5,12 @@ version = 4
 [[package]]
 name = "logtree"
 version = "0.1.0"
+dependencies = [
+ "range-overlap",
+]
+
+[[package]]
+name = "range-overlap"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "306d64753c3718cf83da998dc175552739f66e8a816f50e98960f818e145480b"

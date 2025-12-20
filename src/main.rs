@@ -1,4 +1,5 @@
-use std::default::{self, Default};
+use range_overlap::{RangeOverlap, excl_classify};
+use std::default::Default;
 
 #[derive(Debug, Default)]
 struct Tree {
@@ -16,45 +17,42 @@ impl Tree {
     }
 
     fn write(&mut self, pos: usize, len: usize) {
-        self.find_entry(self.root_idx, pos, len);
+        self.insert(pos, len);
     }
 
-    fn find_entry(&mut self, node_idx: usize, pos: usize, len: usize) {
-        match &self.nodes[node_idx] {
-            TreeNode::Empty => {
-                // create new node
-                self.nodes.push(TreeNode::Leaf {
-                    pos,
-                    len,
-                    offset: self.data.len(),
-                });
-                self.root_idx = self.nodes.len() - 1;
-            }
-            TreeNode::Branch(branch_node) => {
-                if pos + len < branch_node.pos {
-                    // no overlap
-                } else if pos + len > branch_node.pos + branch_node.len {
-                    // no overlap
-                } else {
-                    // there is overlap
-                    if pos <= branch_node.pos && pos + len >= branch_node.pos + branch_node.len {
-                        // full overlap
-                        // branch_node can be dropped
-                    } else if pos == branch_node.pos {
-                        // new node with data pos+len .. branch_node.pos + branch_node.len
-                    } else if pos + len == branch_node.pos + branch_node.len {
-                        // new node with data branch_node.pos .. pos
-                    } else {
-                        unreachable!()
-                    }
+    fn read(&self, pos: usize, buf: &mut [u8]) {}
+
+    fn insert(&mut self, pos: usize, len: usize) {
+        let mut current_node = self.root_idx;
+
+        loop {
+            let node = &self.nodes[current_node];
+            match node {
+                TreeNode::Empty => {
+                    // create new node
+                    self.nodes.push(TreeNode::Leaf {
+                        pos,
+                        len,
+                        offset: self.data.len(),
+                    });
+                    self.root_idx = self.nodes.len() - 1;
+                    return;
                 }
+                TreeNode::Branch(branch_node) => {}
+                TreeNode::Leaf {
+                    pos: leaf_pos,
+                    len: leaf_len,
+                    offset,
+                } => match excl_classify(pos, pos + len, *leaf_pos, leaf_pos + leaf_len) {
+                    RangeOverlap::None => todo!(),
+                    _ => todo!(),
+                },
             }
-            TreeNode::Leaf { pos, len, offset } => todo!(),
         }
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone)]
 enum TreeNode {
     #[default]
     Empty,
@@ -66,12 +64,19 @@ enum TreeNode {
     Branch(BranchTreeNode),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone)]
 struct BranchTreeNode {
     pos: usize,
     len: usize,
-    children: Vec<TreeNode>,
+    children: [usize; 2],
 }
+
+#[derive(Debug)]
+enum InsertResult {
+    NewLeaf,
+    Done,
+}
+
 // empty
 //
 // +w 0 100
@@ -103,6 +108,8 @@ fn main() {
     let mut tree = Tree::new();
 
     tree.write(0, 100);
-
     println!("{:?}", tree);
+    tree.write(100, 110);
+    println!("{:?}", tree);
+    tree.write(100, 110);
 }
